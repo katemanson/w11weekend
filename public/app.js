@@ -241,10 +241,16 @@ var checkRecent = function(qDiv, answerForm, qCountry, aCapital, aOptions, numbe
   else if ( questionSet.length > 3 ){
     upToLastThreeQuestions = questionSet.slice(questionSet.length - 3);
   }
+
+  var upToLastThreeCountries = [];
+  upToLastThreeQuestions.forEach(function(element){
+    upToLastThreeCountries.push(element.questionCountry);
+  });
+  console.log('up to last three countries', upToLastThreeCountries);
   console.log('up to last three questions', upToLastThreeQuestions);
   console.log('question country:', qCountry);
 
-  if ( upToLastThreeQuestions.some(function(element){ return element.qCountry === qCountry }) ){
+  if ( upToLastThreeCountries.some(function(element){ return element === qCountry }) ){
     console.log('in if statement');
     while (qDiv.firstChild){
       qDiv.removeChild(qDiv.firstChild);
