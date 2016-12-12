@@ -62,10 +62,16 @@ var prepData = function(rawCountries){
     var correctAnswers = 0;
 
     this.style.visibility = 'hidden';
+    showMap(this.value);
+    setQuestion(countryNames, capitals, numberAnswers, correctAnswers);
+  });
+}
+
+var showMap = function(region){
 
     var coords = {};
     var zoom = 4; // zoom 'defaults' to 4
-    switch (this.value){
+    switch (region){
       case "Southern Asia":
         coords = {lat:31, lng:65};
         zoom = 3;
@@ -175,9 +181,6 @@ var prepData = function(rawCountries){
         }
       ]
     });
-    
-    setQuestion(countryNames, capitals, numberAnswers, correctAnswers);
-  });
 }
 
 var setQuestion = function(countries, cities, numberAnswers, correctAnswers){
@@ -186,34 +189,10 @@ var setQuestion = function(countries, cities, numberAnswers, correctAnswers){
   var capitals = cities;
 
   var randIndexQ = getRandomIndex(countryNames.length - 1, []);
-
   var qCountry = countryNames[randIndexQ];
+  var aCapital = capitals[randIndexQ];
   
   var qDiv = document.getElementById('question');
-  var answerForm = document.getElementById('answer-form');
-  var questionSet = JSON.parse(localStorage.getItem('questionSet')) || [];
-  var upToLastThreeQuestions = [];
-  if ( questionSet.length <= 3 ){ upToLastThreeQuestions = questionSet; }
-  else if ( questionSet.length > 3 ){
-    upToLastThreeQuestions = questionSet.slice(questionSet.length - 3);
-  }
-  console.log('up to last three questions', upToLastThreeQuestions);
-
-  for (var i = 0; i < upToLastThreeQuestions.length; i++) {
-    if ( qCountry === upToLastThreeQuestions[i].questionCountry ){
-      console.log('in if statement');
-      console.log('qCountry', qCountry);
-      console.log('upToLastThreeQuestions[i].questionCountry', upToLastThreeQuestions[i].questionCountry);
-      qDiv.innerHTML = "";
-      console.log('qDiv', qDiv);
-      console.log('qDiv.children', qDiv.children);
-      answerForm.innerHTML = "";
-      setQuestion(countries, cities, numberAnswers, correctAnswers);
-    }
-  }
-
-  var aCapital = capitals[randIndexQ];
-
   var qText = document.createElement('p');
   qText.id = 'question-text';
   qText.innerHTML = "What is the capital of " + "<b>" + qCountry + "</b>?";
@@ -226,6 +205,7 @@ var setQuestion = function(countries, cities, numberAnswers, correctAnswers){
   var aOptions = [aCapital, aOptionOne, aOptionTwo];
   var aOptions = shuffleArray(aOptions);
 
+  var answerForm = document.getElementById('answer-form');
   for (var i = 0; i < aOptions.length; i++){
     var input = document.createElement('input');
     input.type = 'radio';
@@ -247,7 +227,36 @@ var setQuestion = function(countries, cities, numberAnswers, correctAnswers){
   answerButton.innerHTML = "Submit";
   answerForm.appendChild(answerButton);
 
-  checkResult(qDiv, answerForm, qCountry, aCapital, aOptions, numberAnswers, correctAnswers);
+  checkRecent(qDiv, answerForm, qCountry, aCapital, aOptions, numberAnswers, correctAnswers, countryNames, capitals);
+}
+
+var checkRecent = function(qDiv, answerForm, qCountry, aCapital, aOptions, numberAnswers, correctAnswers, countryNames, capitals){
+
+  var questionSet = JSON.parse(localStorage.getItem('questionSet')) || [];
+  
+  var upToLastThreeQuestions = [];
+  if ( questionSet.length <= 3 ){ 
+    upToLastThreeQuestions = questionSet; 
+  }
+  else if ( questionSet.length > 3 ){
+    upToLastThreeQuestions = questionSet.slice(questionSet.length - 3);
+  }
+  console.log('up to last three questions', upToLastThreeQuestions);
+  console.log('question country:', qCountry);
+
+  if ( upToLastThreeQuestions.some(function(element){ return element.qCountry === qCountry }) ){
+    console.log('in if statement');
+    while (qDiv.firstChild){
+      qDiv.removeChild(qDiv.firstChild);
+    }
+    while (answerForm.firstChild){
+      answerForm.removeChild(answerForm.firstChild);
+    }
+    setQuestion(countryNames, capitals, numberAnswers, correctAnswers);
+  }
+  else {
+    checkResult(qDiv, answerForm, qCountry, aCapital, aOptions, numberAnswers, correctAnswers);
+  }
 }
 
 var checkResult = function(qDiv, answerForm, qCountry, aCapital, aOptions, numberAnswers, correctAnswers){
@@ -355,7 +364,39 @@ var showNextOptions = function(numberAnswers, correctAnswers, qDiv, resultsDiv, 
       mapDiv.removeChild(mapDiv.firstChild);
     }
 
-    //display record of questions in session
+    var chartDiv = document.getElementById('chart');
+    var chart = new Highcharts.Chart(chartDiv, {
+      chart: {
+        type: 'bar'
+      }, 
+      title: {
+        text: 'Results'
+      },
+      xAxis: {
+        categories: ['Question set']
+      },
+      yAxis: {
+        min: 0, 
+        max: 100,
+        title: {
+          text: 'Per cent'
+        }
+      },
+      plotOptions: {
+        series: {
+          stacking: 'normal'
+        }
+      },
+      series: [{
+        name: 'Correct',
+        data: [Math.round((correctAnswers/numberAnswers)*100)]
+      },
+      {
+        name: 'Not correct',
+        data: [Math.round(((numberAnswers - correctAnswers)/numberAnswers)*100)]
+      }]
+
+    });
 
   };
 }
